@@ -16,12 +16,10 @@ services:
       - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT_DOCKER
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
-      - KAFKA_LOG_DIRS=/kafka/kraft-combined-logs
+      - KAFKA_LOG_DIRS=/tmp/kraft-combined-logs
     ports:
       - "9080:9080"
       - "9070:9070"
-    volumes:
-      - kafka_data:/kafka/kraft-combined-logs
     networks:
       - parsing-net
 
@@ -52,9 +50,6 @@ services:
       - "8070:8070"
     networks:
       - parsing-net
-
-volumes:
-  kafka_data:
 
 networks:
   parsing-net:
