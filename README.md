@@ -19,6 +19,7 @@ PriceMeasured:
 ## Запуск
 
 - Docker: `docker compose up -d --build`
-- Локально: `setx configPath .\\config.yaml` и `go run .\\cmd\\app`
+- Локально (Windows PowerShell): `$env:configPath = ".\\config.yaml"` и `go run .\\cmd\\app`
 
-Health эндпоинт': `GET http://localhost:8070/health`
+Health: `GET http://localhost:8070/health`
+
