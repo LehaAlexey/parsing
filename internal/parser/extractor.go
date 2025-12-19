@@ -39,6 +39,27 @@ func (e *Extractor) Extract(htmlBytes []byte) (int64, string, bool) {
 		}
 	}
 
+	priceStr, currency, ok = extractFromScriptJSON(htmlBytes)
+	if ok {
+		if p, ok := parsePriceInt64(priceStr); ok {
+			return p, normalizeCurrency(currency), true
+		}
+	}
+
+	priceStr, currency, ok = extractFromScriptJSON(htmlBytes)
+	if ok {
+		if p, ok := parsePriceInt64(priceStr); ok {
+			return p, normalizeCurrency(currency), true
+		}
+	}
+
+	priceStr, currency, ok = extractFromTextWithCurrency(htmlBytes)
+	if ok {
+		if p, ok := parsePriceInt64(priceStr); ok {
+			return p, normalizeCurrency(currency), true
+		}
+	}
+
 	if m := e.priceRe.FindSubmatch(htmlBytes); len(m) >= 2 {
 		if p, ok := parsePriceInt64(string(m[1])); ok {
 			return p, "", true
@@ -140,13 +161,98 @@ func extractFromJSONLD(b []byte) (string, string, bool) {
 	}
 }
 
+func extractFromScriptJSON(b []byte) (string, string, bool) {
+	z := html.NewTokenizer(bytes.NewReader(b))
+	for {
+		tt := z.Next()
+		switch tt {
+		case html.ErrorToken:
+			return "", "", false
+		case html.StartTagToken:
+			t := z.Token()
+			if strings.ToLower(t.Data) != "script" {
+				continue
+			}
+			if z.Next() != html.TextToken {
+				continue
+			}
+			raw := strings.TrimSpace(string(z.Text()))
+			if raw == "" {
+				continue
+			}
+
+			if price, currency, ok := parseEmbeddedJSON(raw); ok {
+				return price, currency, true
+			}
+		}
+	}
+}
+
+func parseEmbeddedJSON(raw string) (string, string, bool) {
+	var v any
+	if err := json.Unmarshal([]byte(raw), &v); err == nil {
+		if price, currency, ok := findPriceCurrency(v); ok && price != "" {
+			return price, currency, true
+		}
+	}
+
+	start := strings.Index(raw, "{")
+	if start == -1 {
+		return "", "", false
+	}
+	end := strings.LastIndex(raw, "}")
+	if end <= start {
+		return "", "", false
+	}
+	fragment := strings.TrimSpace(raw[start : end+1])
+	if fragment == "" {
+		return "", "", false
+	}
+
+	if err := json.Unmarshal([]byte(fragment), &v); err != nil {
+		return "", "", false
+	}
+	if price, currency, ok := findPriceCurrency(v); ok && price != "" {
+		return price, currency, true
+	}
+
+	return "", "", false
+}
+
+func extractFromTextWithCurrency(b []byte) (string, string, bool) {
+	patterns := []struct {
+		re       *regexp.Regexp
+		currency string
+	}{
+		{regexp.MustCompile(`(?i)(?:₽|rub|rur|руб\.?|р\.?)\s*([0-9][0-9\\s\\u00A0.,]{0,20})`), "RUB"},
+		{regexp.MustCompile(`(?i)([0-9][0-9\\s\\u00A0.,]{0,20})\s*(?:₽|rub|rur|руб\.?|р\.?)`), "RUB"},
+		{regexp.MustCompile(`(?i)(?:usd|\\$|dollars?)\\s*([0-9][0-9\\s\\u00A0.,]{0,20})`), "USD"},
+		{regexp.MustCompile(`(?i)([0-9][0-9\\s\\u00A0.,]{0,20})\\s*(?:usd|\\$|dollars?)`), "USD"},
+		{regexp.MustCompile(`(?i)(?:eur|€|euros?)\\s*([0-9][0-9\\s\\u00A0.,]{0,20})`), "EUR"},
+		{regexp.MustCompile(`(?i)([0-9][0-9\\s\\u00A0.,]{0,20})\\s*(?:eur|€|euros?)`), "EUR"},
+	}
+	text := string(b)
+	for _, p := range patterns {
+		if m := p.re.FindStringSubmatch(text); len(m) >= 2 {
+			return m[1], p.currency, true
+		}
+	}
+	return "", "", false
+}
+
 func findPriceCurrency(v any) (string, string, bool) {
 	switch x := v.(type) {
 	case map[string]any:
-		if p, ok := x["price"]; ok {
+		if p, ok := firstKey(x, "price", "priceValue", "price_value", "priceNumeric", "price_num", "amount", "value"); ok {
 			price := toString(p)
-			currency := toString(firstKey(x, "priceCurrency", "price_currency", "currency"))
-			return price, currency, price != ""
+			if price == "" {
+				return "", "", false
+			}
+			cur := ""
+			if c, ok := firstKey(x, "priceCurrency", "price_currency", "currency", "currencyCode", "currency_code", "currencyId", "currency_id"); ok {
+				cur = toString(c)
+			}
+			return price, cur, true
 		}
 		if o, ok := x["offers"]; ok {
 			if price, currency, ok := findPriceCurrency(o); ok {
@@ -168,13 +274,13 @@ func findPriceCurrency(v any) (string, string, bool) {
 	return "", "", false
 }
 
-func firstKey(m map[string]any, keys ...string) any {
+func firstKey(m map[string]any, keys ...string) (any, bool) {
 	for _, k := range keys {
 		if v, ok := m[k]; ok {
-			return v
+			return v, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 func toString(v any) string {
