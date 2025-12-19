@@ -23,11 +23,11 @@ PriceMeasured:
 
 Health: `GET http://localhost:8070/health`
 
-Для тестов был написан main.go в cmd/pricecheck/
+Для тестов был написан main.go в `cmd/pricecheck/`
 Он запускает обработку по нескольким ссылкам через пасрер
 
 Запустить его можно через команду для cmd (windows) в папке pricecheck 
-main.go | go run .
+`main.go | go run .`
 с помощью cmd.exe
 
 ## Ограничения
