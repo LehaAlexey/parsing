@@ -1,0 +1,27 @@
+kafka:
+  host: "kafka"
+  port: 9070
+  price_measured_topic_name: "price_measured"
+  group_id: "history_service_group"
+
+database:
+  host: "history-postgres"
+  port: 5432
+  username: "admin"
+  password: "admin"
+  name: "history"
+  ssl_mode: "disable"
+
+redis:
+  host: "redis"
+  port: 6379
+  db: 0
+  recent_limit: 1000
+  recent_ttl_seconds: 86400
+
+grpc:
+  addr: ":50062"
+
+http:
+  addr: ":8072"
+

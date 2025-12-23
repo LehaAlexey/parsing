@@ -1,0 +1,23 @@
+database:
+  host: "postgres"
+  port: 5432
+  username: "admin"
+  password: "admin"
+  name: "users"
+  ssl_mode: "disable"
+
+kafka:
+  host: "kafka"
+  port: 9070
+  parse_requested_topic_name: "parse_requested"
+
+http:
+  addr: ":8071"
+
+grpc:
+  addr: ":50061"
+
+scheduler:
+  tick_seconds: 5
+  default_interval_seconds: 3600
+  max_batch: 100
