@@ -9,19 +9,27 @@ import (
 	"strings"
 	"time"
 
+	"github.com/LehaAlexey/Parsing/internal/kafka"
 	"github.com/LehaAlexey/Parsing/internal/models"
 	"github.com/LehaAlexey/Parsing/internal/models/events"
-	"github.com/LehaAlexey/Parsing/internal/parser"
 	kafkago "github.com/segmentio/kafka-go"
 )
 
-type Processor struct {
-	extractor *parser.Extractor
-	fetcher   *parser.Fetcher
-	writer    *kafkago.Writer
+type Extractor interface {
+	Extract(htmlBytes []byte) (int64, string, bool)
 }
 
-func New(extractor *parser.Extractor, fetcher *parser.Fetcher, writer *kafkago.Writer) *Processor {
+type Fetcher interface {
+	Fetch(ctx context.Context, rawURL string) ([]byte, string, error)
+}
+
+type Processor struct {
+	extractor Extractor
+	fetcher   Fetcher
+	writer    kafka.Writer
+}
+
+func New(extractor Extractor, fetcher Fetcher, writer kafka.Writer) *Processor {
 	return &Processor{extractor: extractor, fetcher: fetcher, writer: writer}
 }
 

@@ -1,9 +1,0 @@
-http:
-  addr: ":8080"
-
-users_grpc:
-  addr: "localhost:50061"
-
-history_grpc:
-  addr: "localhost:50062"
-

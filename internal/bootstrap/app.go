@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,8 +13,8 @@ import (
 )
 
 type App struct {
-	consumer *parse_requested_consumer.ParseRequestedConsumer
-	server   *HealthServer
+	consumer Consumer
+	server   HealthServerRunner
 }
 
 func InitApp(cfg *config.Config) (*App, error) {
@@ -41,4 +42,13 @@ func InitApp(cfg *config.Config) (*App, error) {
 
 	server := NewHealthServer(configuration.HTTP.Addr)
 	return &App{consumer: consumer, server: server}, nil
+}
+
+type Consumer interface {
+	Consume(ctx context.Context) error
+}
+
+type HealthServerRunner interface {
+	Addr() string
+	Run(ctx context.Context) error
 }

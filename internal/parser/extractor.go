@@ -16,7 +16,7 @@ type Extractor struct {
 
 func NewExtractor() *Extractor {
 	return &Extractor{
-		priceRe: regexp.MustCompile(`(?i)(?:price|amount)[^0-9]{0,20}([0-9][0-9\\s\\u00A0.,]{0,20})`),
+		priceRe: regexp.MustCompile(`(?i)(?:price|amount)[^0-9]{0,20}([0-9][0-9\s.,]{0,20})`),
 	}
 }
 
@@ -33,13 +33,6 @@ func (e *Extractor) Extract(htmlBytes []byte) (int64, string, bool) {
 	}
 
 	priceStr, currency, ok = extractFromJSONLD(htmlBytes)
-	if ok {
-		if p, ok := parsePriceInt64(priceStr); ok {
-			return p, normalizeCurrency(currency), true
-		}
-	}
-
-	priceStr, currency, ok = extractFromScriptJSON(htmlBytes)
 	if ok {
 		if p, ok := parsePriceInt64(priceStr); ok {
 			return p, normalizeCurrency(currency), true
@@ -83,9 +76,9 @@ func extractFromMeta(b []byte) (string, string, bool) {
 				continue
 			}
 			var (
-				itemprop  string
-				property  string
-				content   string
+				itemprop string
+				property string
+				content  string
 			)
 			for _, a := range t.Attr {
 				switch strings.ToLower(a.Key) {
@@ -205,9 +198,6 @@ func parseEmbeddedJSON(raw string) (string, string, bool) {
 		return "", "", false
 	}
 	fragment := strings.TrimSpace(raw[start : end+1])
-	if fragment == "" {
-		return "", "", false
-	}
 
 	if err := json.Unmarshal([]byte(fragment), &v); err != nil {
 		return "", "", false
@@ -224,12 +214,12 @@ func extractFromTextWithCurrency(b []byte) (string, string, bool) {
 		re       *regexp.Regexp
 		currency string
 	}{
-		{regexp.MustCompile(`(?i)(?:₽|rub|rur|руб\.?|р\.?)\s*([0-9][0-9\\s\\u00A0.,]{0,20})`), "RUB"},
-		{regexp.MustCompile(`(?i)([0-9][0-9\\s\\u00A0.,]{0,20})\s*(?:₽|rub|rur|руб\.?|р\.?)`), "RUB"},
-		{regexp.MustCompile(`(?i)(?:usd|\\$|dollars?)\\s*([0-9][0-9\\s\\u00A0.,]{0,20})`), "USD"},
-		{regexp.MustCompile(`(?i)([0-9][0-9\\s\\u00A0.,]{0,20})\\s*(?:usd|\\$|dollars?)`), "USD"},
-		{regexp.MustCompile(`(?i)(?:eur|€|euros?)\\s*([0-9][0-9\\s\\u00A0.,]{0,20})`), "EUR"},
-		{regexp.MustCompile(`(?i)([0-9][0-9\\s\\u00A0.,]{0,20})\\s*(?:eur|€|euros?)`), "EUR"},
+		{regexp.MustCompile(`(?i)(?:rub|rur)\s*([0-9][0-9\s.,]{0,20})`), "RUB"},
+		{regexp.MustCompile(`(?i)([0-9][0-9\s.,]{0,20})\s*(?:rub|rur)`), "RUB"},
+		{regexp.MustCompile(`(?i)(?:usd|\$|dollars?)\s*([0-9][0-9\s.,]{0,20})`), "USD"},
+		{regexp.MustCompile(`(?i)([0-9][0-9\s.,]{0,20})\s*(?:usd|\$|dollars?)`), "USD"},
+		{regexp.MustCompile(`(?i)(?:eur|euros?)\s*([0-9][0-9\s.,]{0,20})`), "EUR"},
+		{regexp.MustCompile(`(?i)([0-9][0-9\s.,]{0,20})\s*(?:eur|euros?)`), "EUR"},
 	}
 	text := string(b)
 	for _, p := range patterns {
@@ -306,7 +296,7 @@ func normalizeCurrency(s string) string {
 	if s == "RUR" {
 		return "RUB"
 	}
-	if strings.Contains(s, "₽") {
+	if strings.Contains(s, "RUB") {
 		return "RUB"
 	}
 	return s
@@ -319,9 +309,10 @@ func parsePriceInt64(s string) (int64, bool) {
 	}
 	s = strings.ReplaceAll(s, "\u00A0", "")
 	s = strings.ReplaceAll(s, " ", "")
-	s = strings.ReplaceAll(s, "₽", "")
-	s = strings.ReplaceAll(s, "руб.", "")
-	s = strings.ReplaceAll(s, "руб", "")
+	s = strings.ReplaceAll(s, "RUB", "")
+	s = strings.ReplaceAll(s, "RUR", "")
+	s = strings.ReplaceAll(s, "USD", "")
+	s = strings.ReplaceAll(s, "EUR", "")
 	s = strings.ReplaceAll(s, ",", ".")
 
 	var b strings.Builder

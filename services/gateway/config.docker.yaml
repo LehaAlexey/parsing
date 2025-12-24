@@ -1,9 +1,0 @@
-http:
-  addr: ":8080"
-
-users_grpc:
-  addr: "users-service:50061"
-
-history_grpc:
-  addr: "history-service:50062"
-

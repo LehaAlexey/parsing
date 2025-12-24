@@ -1,2 +1,0 @@
-include ./scripts/command.mk
-
