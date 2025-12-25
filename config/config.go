@@ -11,6 +11,7 @@ type Config struct {
 	Kafka  KafkaConfig  `yaml:"kafka"`
 	HTTP   HTTPConfig   `yaml:"http"`
 	Parser ParserConfig `yaml:"parser"`
+	Swagger SwaggerConfig `yaml:"swagger"`
 }
 
 type KafkaConfig struct {
@@ -35,6 +36,11 @@ type ParserConfig struct {
 	PerDomainMinIntervalMS int    `yaml:"per_domain_min_interval_ms"`
 }
 
+type SwaggerConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Path    string `yaml:"path"`
+}
+
 func LoadConfig(filename string) (*Config, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -48,4 +54,3 @@ func LoadConfig(filename string) (*Config, error) {
 
 	return &cfg, nil
 }
-

@@ -1,0 +1,20 @@
+packages:
+  github.com/LehaAlexey/Parsing/internal/services/processors/parse_requested_processor:
+    interfaces:
+      Extractor:
+        config:
+          outpkg: mocks
+          filename: parse_requested_processor_extractor.go
+          dir: internal/services/processors/parse_requested_processor/mocks
+      Fetcher:
+        config:
+          outpkg: mocks
+          filename: parse_requested_processor_fetcher.go
+          dir: internal/services/processors/parse_requested_processor/mocks
+  github.com/LehaAlexey/Parsing/internal/kafka:
+    interfaces:
+      Writer:
+        config:
+          outpkg: mocks
+          filename: kafka_writer.go
+          dir: internal/kafka/mocks

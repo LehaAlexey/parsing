@@ -16,3 +16,7 @@ parser:
   min_backoff_ms: 200
   max_backoff_ms: 2000
   per_domain_min_interval_ms: 300
+
+swagger:
+  enabled: false
+  path: "/swagger"
